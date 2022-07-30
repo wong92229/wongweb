@@ -1,0 +1,49 @@
+function ValidateForm(ID_Form, ID_Button) {
+    var count_red_field = 0;
+    var count_cyan_field = 0;
+
+    $('#'+ID_Form).find('input, select').each(function(){    
+        if(($(this).css('background-color')=="rgb(255, 0, 0)") || ($(this).parent().css('background-color')=="rgb(255, 0, 0)")){  // red
+            count_red_field++;
+        }
+        else if(($(this).css('background-color')=="rgb(0, 255, 255)") || ($(this).parent().css('background-color')=="rgb(0, 255, 255)")) { // cyan
+            count_cyan_field++;
+        }
+    });
+    if ((count_red_field == 0) && (count_cyan_field >0)) {
+         $('#'+ID_Button).prop('disabled', false);
+    }
+    else {
+         $('#'+ID_Button).prop('disabled', true);
+    }
+}
+    
+function ValidateField(ID_Form, ID_Button, field, result) {
+    switch(result) {
+        case 1: // white background color
+            if ((field.getAttribute('type') == 'checkbox') || (field.getAttribute('type') == 'radio')) {
+                field.parentNode.style.backgroundColor = '';
+            }
+            else { // type input text
+                field.style.background = 'white';
+            }
+            break;
+        case 2: // cyan background color
+            if ((field.getAttribute('type') == 'checkbox') || (field.getAttribute('type') == 'radio')) {
+                field.parentNode.style.backgroundColor = 'cyan';
+            }
+            else { // type input text
+                field.style.background = 'cyan';
+            }
+            break;
+        case 3: // red background color
+            if ((field.getAttribute('type') == 'checkbox') || (field.getAttribute('type') == 'radio')){
+                field.parentNode.style.backgroundColor = 'red';
+            }
+            else { // type input text
+                field.style.background = 'red';
+            }
+            break;
+    }
+    ValidateForm(ID_Form, ID_Button);
+}

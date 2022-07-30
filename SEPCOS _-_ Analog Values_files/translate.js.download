@@ -1,0 +1,92 @@
+var javaScriptTranslateEvent = function () {
+  var translations_event = {};
+
+  return {
+    translate: function (text) {
+      if (typeof translations_event[text] === 'undefined') {
+        return text;
+      } else {
+        return translations_event[text];
+      }
+    },
+    init: function (translationArray) {
+      translations_event = translationArray;
+    }
+  };
+}();
+
+var javaScriptTranslateEventType = function () {
+  var translations_type = {};
+
+  return {
+    translate: function (text) {
+      if (typeof translations_type[text] === 'undefined') {
+        return text;
+      } else {
+        return translations_type[text];
+      }
+    },
+    init: function (translationArray) {
+      translations_type = translationArray;
+    }
+  };
+}();
+
+var javaScriptTranslateCmdType = function () {
+  var translations_type = {};
+
+  return {
+    translate: function (text) {
+      if (typeof translations_type[text] === 'undefined') {
+        return text;
+      } else {
+        return translations_type[text].replace(/<br>/g, ' ');
+      }
+    },
+    init: function (translationArray) {
+      translations_type = translationArray;
+    }
+  };
+}();
+
+var javaScriptTranslateInterface = function () {
+  var translations_type = {};
+
+  return {
+    translate: function (text) {
+      if (typeof translations_type[text] === 'undefined') {
+        return text;
+      } else {
+        return translations_type[text];
+      }
+    },
+    init: function (translationArray) {
+      translations_type = translationArray;
+    }
+  };
+}();
+
+var javaScriptTranslateLeds = function () {
+  var translations_type = {};
+
+  return {
+    translate: function (text) {
+      return ((translations_type[text] || []).length > 4) ? translations_type[text][0] : text;
+    },
+    bgcolorEnabled: function (text, value_default) {
+      return ((translations_type[text] || []).length > 4) ? ((translations_type[text][1]=='0') ? value_default : translations_type[text][1]) : value_default;
+    },
+    bgcolorDisabled: function (text, value_default) {
+      return ((translations_type[text] || []).length > 4) ? ((translations_type[text][2]=='0') ? value_default : translations_type[text][2]) : value_default;
+    },
+    fgcolorEnabled: function (text, value_default) {
+      return ((translations_type[text] || []).length > 4) ? ((translations_type[text][3]=='0') ? value_default : translations_type[text][3]) : value_default;
+    },
+    fgcolorDisabled: function (text, value_default) {
+      return ((translations_type[text] || []).length > 4) ? ((translations_type[text][4]=='0') ? value_default : translations_type[text][4]) : value_default;
+    },
+    init: function (translationArray) {
+      translations_type = translationArray;
+    }
+  };
+}();

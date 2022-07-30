@@ -1,0 +1,163 @@
+var DYN_MODE_SELECTED;
+var DYN_PCMD = new Array();
+//DYN_PCMD['componant'] = new Array();
+//DYN_PCMD['id_componant'] = new Array();
+//DYN_PCMD['cmd'] = new Array();
+//DYN_PCMD['permissive'] = new Array();
+
+var SEPCOS2WebSocket = function (url)
+{
+  var callbacks = {};
+  var add_info = new Array();
+  var ws_url = url;
+  var conn;
+
+  this.bind = function (event_name, callback) {
+    callbacks[event_name] = callbacks[event_name] || [];
+    callbacks[event_name].push(callback);
+    return this;// chainable
+  };
+
+  var insert_addinfo = function (text) {
+    if(add_info.length > 0 && add_info[0] !== null) {
+        for (m = 1; m < add_info.length; m++) { 
+            return text.replace('%'+m, add_info[m]);
+        }
+    }
+    else {
+        return text;
+    }
+  }
+  
+  var sendFunction = function (event_name, event_data) {
+    var myDate = new Date();
+    //var myEpoch = myDate.getTime();
+    //alert(event_data);
+    (conn || this).send(event_name + ';WEB;' + myDate.getTime() + ';' + event_data);
+    return this;
+  };
+  this.send = sendFunction;
+
+  this.connect = function () {
+    if (typeof (MozWebSocket) == 'function')
+      conn = new MozWebSocket(url, "SEPCOS2-protocol");
+    else
+      conn = new WebSocket(url, "SEPCOS2-protocol");
+
+    // dispatch to the right handlers
+    conn.onmessage = function (evt) {
+      var str = evt.data;
+      onLineCheckControl++;
+      //if ( str.search("#TIME") > -1)
+      //	dispatch('time', str.slice(6));
+      if (str.search("#TREND") > -1)
+        dispatch('trends', str.slice(7));
+      else if (str.search("#EVENT") > -1)
+        dispatch('events', str.slice(7));
+      else if (str.search("#COUNT") > -1)
+        dispatch('counters', str.slice(7));
+      else if (str.search("#DYN") > -1) {
+        // data are triades or variable name/value/date, fields seperated by ;
+        var f = str.split(";");
+        var l = f.length;
+        for (var j = 0; j < l; j += 3) {
+          if ((f[j] == "#DYN_MODE") && (f[j + 1] > 230)) {
+            DYN_MODE_SELECTED = f[j + 1] - 200;
+            f[j + 1] = javaScriptTranslateCmdType.translate(f[j + 1] - 200);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else if ((Boolean(f[j].match(/^#DYN_TRUCK/))) && (f[j + 1] > 349)) {
+            //else if ((f[j] == "#DYN_TRUCK") && (f[j+1]>349)){
+            f[j + 1] = javaScriptTranslateCmdType.translate(f[j + 1] - 300);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else if (f[j].search("#DYN_PCMD_WEB") > -1) {
+            var frame = f[j].split("_");
+            for (var i = 0; i < f[j + 1].length; i++) {
+              DYN_PCMD[frame[3] + "_" + frame[4] + "_" + (i + 1)] = f[j + 1].charAt(i);
+            }
+          }
+          else if ((f[j] == "#DYN_PRO_IO") || (f[j] == "#DYN_EPRO_IO")){
+            $(document).trigger(f[j], f[j + 1]);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else if ((Boolean(f[j].match(/^#DYN_DIO/))) && (Boolean(f[j].match(/_IO/)))) {
+            $(document).trigger(f[j], f[j + 1]);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else if (f[j] == "#DYN_MAXMIN_AI"){
+            dispatch('maxmin', f[j+1] + "|" + f[j+2]);
+          }
+          else if (f[j] == "#DYN_CABLEPROT"){
+            if (f[j+1] == '0|0|0') {
+              f[j+1] = 'N.A.|N.A.|N.A.';
+            }
+            dispatch('cableprotection', f[j+1] + "|" + f[j+2]);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else if (f[j] == "#DYN_VLD"){
+            dispatch('voltagelimiting', f[j+1] + "|" + f[j+2]);
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+          else {
+            svgSynoptic.applyVariable(f[j], f[j + 1], parseInt(f[j + 2]));
+          }
+        }
+      }
+      else if (str.search("#MSG") > -1) {
+        var msg = str.split("|");
+        for (i = 0; i < msg.length; i++) { 
+            var f = msg[i].split(";");
+            add_info = [];
+            if (f.length > 7) {               
+                for (k = 7; k < f.length; k++) { 
+                    add_info[k-6]=f[k].trim();
+                }
+            }
+            if (String(f[3]).search("LED") > -1) { // Message to change LED colorBG/text/colorFG
+                var ff = f[3].split(':');
+                if (ff[1].trim() == '1') {
+                    svgSynoptic.applyVariable(ff[0] + "_bgColor", "'#" + javaScriptTranslateLeds.bgcolorEnabled(f[5], f[4].trim()) + "'", parseInt(f[2]));
+                    svgSynoptic.applyVariable(ff[0] + "_fgColor", "'#" + javaScriptTranslateLeds.fgcolorEnabled(f[5], f[6].trim()) + "'", parseInt(f[2]));
+                }
+                else {
+                    svgSynoptic.applyVariable(ff[0] + "_bgColor", "'#" + javaScriptTranslateLeds.bgcolorDisabled(f[5], f[4].trim()) + "'", parseInt(f[2]));
+                    svgSynoptic.applyVariable(ff[0] + "_fgColor", "'#" + javaScriptTranslateLeds.fgcolorDisabled(f[5], f[6].trim()) + "'", parseInt(f[2]));
+                }
+                svgSynoptic.applyVariable(ff[0] + "_text", insert_addinfo(javaScriptTranslateLeds.translate(f[5])), parseInt(f[2]));                
+                svgSynoptic.applyVariable(ff[0], ff[1].trim(), parseInt(f[2]));
+            }
+        }
+      }
+      else if (str.search("#UPDATE_UNREAD_EVENT") > -1) {
+        dispatch('update_unread_event', str.slice(21));
+      }
+      else if (str.search("#UPD_FCT") > -1)
+        dispatch('update_fct', str.slice(9));
+      else
+        dispatch('message', evt.data);
+    };
+
+    conn.onclose = function () {
+      dispatch('close', null)
+    }
+    conn.onopen = function () {
+      // Send RELED to get latest LED data
+      sendFunction.call(this,'#MSG','CPU_VM;RELED;0');
+      dispatch('open', null)
+    };
+  };
+
+  this.disconnect = function () {
+    conn.close();
+  };
+
+  var dispatch = function (event_name, message) {
+    var chain = callbacks[event_name];
+    if (typeof chain == 'undefined')
+      return; // no callbacks for this event
+    for (var i = 0; i < chain.length; i++) {
+      chain[i](message)
+    }
+  }
+};
